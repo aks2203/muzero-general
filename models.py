@@ -333,9 +333,11 @@ class RepresentationNetwork(torch.nn.Module):
             num_channels,
         )
         self.bn = torch.nn.BatchNorm2d(num_channels)
-        self.resblocks = torch.nn.ModuleList(
-            [ResidualBlock(num_channels) for _ in range(num_blocks)]
-        )
+        # self.resblocks = torch.nn.ModuleList(
+        #     [ResidualBlock(num_channels) for _ in range(num_blocks)]
+        # )
+        self.resblocks = ResidualBlock(num_channels)
+        self.num_blocks = num_blocks
 
     def forward(self, x):
         if self.downsample:
@@ -345,10 +347,8 @@ class RepresentationNetwork(torch.nn.Module):
             x = self.bn(x)
             x = torch.nn.functional.relu(x)
 
-        for block in self.resblocks:
-            s = x.shape
-            x = block(x)
-            print(f"\n\nAvi wants to know: {s, x.shape}")
+        for _ in self.num_blocks:
+            x = self.resblocks(x)
         return x
 
 

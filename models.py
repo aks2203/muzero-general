@@ -307,7 +307,6 @@ class RepresentationNetwork(torch.nn.Module):
         downsample,
     ):
         super().__init__()
-        print("\n\n\n\tAvi found the right spot now\n\n\n")
         self.downsample = downsample
         if self.downsample:
             if self.downsample == "resnet":
@@ -338,6 +337,8 @@ class RepresentationNetwork(torch.nn.Module):
         # )
         self.resblocks = ResidualBlock(num_channels)
         self.num_blocks = num_blocks
+        print(f"\n\n\n\tAvi num resblocks: {num_blocks}\n\n\n")
+
 
     def forward(self, x):
         if self.downsample:
@@ -347,7 +348,7 @@ class RepresentationNetwork(torch.nn.Module):
             x = self.bn(x)
             x = torch.nn.functional.relu(x)
 
-        for _ in self.num_blocks:
+        for _ in range(self.num_blocks):
             x = self.resblocks(x)
         return x
 

@@ -96,7 +96,7 @@ class MuZeroFullyConnectedNetwork(AbstractNetwork):
         self.full_support_size = 2 * support_size + 1
 
         self.representation_network = torch.nn.DataParallel(
-            mlp(
+            avis_mlp(
                 observation_shape[0]
                 * observation_shape[1]
                 * observation_shape[2]
@@ -637,6 +637,26 @@ def mlp(
         layers += [torch.nn.Linear(sizes[i], sizes[i + 1]), act()]
     return torch.nn.Sequential(*layers)
 
+
+class avis_mlp(torch.nn.Module):
+
+    def __init__(self, input_size,
+                 layer_sizes,
+                 output_size,
+                 output_activation=torch.nn.Identity,
+                 activation=torch.nn.ELU,
+                 ):
+        super(avis_mlp, self).__init__()
+        print("\n\n\n\tAvis MLP is being initialized...\n\n\n")
+        sizes = [input_size] + layer_sizes + [output_size]
+        layers = []
+        for i in range(len(sizes) - 1):
+            act = activation if i < len(sizes) - 2 else output_activation
+            layers += [torch.nn.Linear(sizes[i], sizes[i + 1]), act()]
+        self.layers = torch.nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.layers(x)
 
 def support_to_scalar(logits, support_size):
     """

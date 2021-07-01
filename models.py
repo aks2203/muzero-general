@@ -336,7 +336,7 @@ class RepresentationNetwork(torch.nn.Module):
         #     [ResidualBlock(num_channels) for _ in range(num_blocks)]
         # )
         self.resblocks = ResidualBlock(num_channels)
-        self.num_blocks = num_blocks
+        self.num_blocks = num_blocks+1
         print(f"\n\n\n\tAvi num resblocks: {num_blocks}\n\n\n")
 
 

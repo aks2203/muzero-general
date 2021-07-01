@@ -346,8 +346,9 @@ class RepresentationNetwork(torch.nn.Module):
             x = torch.nn.functional.relu(x)
 
         for block in self.resblocks:
-            print(f"\n\nAvi wants to know the shape of x input to each res block: {x.shape}")
+            s = x.shape
             x = block(x)
+            print(f"\n\nAvi wants to know: {s, x.shape}")
         return x
 
 

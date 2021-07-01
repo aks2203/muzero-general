@@ -307,6 +307,7 @@ class RepresentationNetwork(torch.nn.Module):
         downsample,
     ):
         super().__init__()
+        print("\n\n\n\tAvi found the right spot now\n\n\n")
         self.downsample = downsample
         if self.downsample:
             if self.downsample == "resnet":

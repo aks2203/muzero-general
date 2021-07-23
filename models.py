@@ -20,6 +20,7 @@ class MuZeroNetwork:
                 config.support_size,
             )
         elif config.network == "resnet":
+            
             return MuZeroResidualNetwork(
                 config.observation_shape,
                 config.stacked_observations,
@@ -34,7 +35,10 @@ class MuZeroNetwork:
                 config.resnet_fc_policy_layers,
                 config.support_size,
                 config.downsample,
+                ### NEW ARGUMENT ###
+                recur = config.recur,
             )
+
         else:
             raise NotImplementedError(
                 'The network parameter should be "fullyconnected" or "resnet".'
@@ -305,8 +309,10 @@ class RepresentationNetwork(torch.nn.Module):
         num_blocks,
         num_channels,
         downsample,
+        recur=False,
     ):
         super().__init__()
+        self.recur = recur
         self.downsample = downsample
         if self.downsample:
             if self.downsample == "resnet":
@@ -332,12 +338,21 @@ class RepresentationNetwork(torch.nn.Module):
             num_channels,
         )
         self.bn = torch.nn.BatchNorm2d(num_channels)
+        ### ORIGINAL CODE ###
         # self.resblocks = torch.nn.ModuleList(
         #     [ResidualBlock(num_channels) for _ in range(num_blocks)]
         # )
-        self.resblocks = ResidualBlock(num_channels)
-        self.num_blocks = num_blocks+1
-        print(f"\n\n\n\tAvi num resblocks: {num_blocks}\n\n\n")
+
+        ### NEW LOGIC FOR RECURRENCE ###
+        if self.recur:
+            self.resblocks = ResidualBlock(num_channels)
+            self.num_blocks = num_blocks+1
+            print("Using Recurrent Network")
+            print(f"\n\n\n\tNum resblocks: {num_blocks}\n\n\n")
+        else:
+            self.resblocks = torch.nn.ModuleList(
+                [ResidualBlock(num_channels) for _ in range(num_blocks)]
+            )
 
 
     def forward(self, x):
@@ -348,8 +363,14 @@ class RepresentationNetwork(torch.nn.Module):
             x = self.bn(x)
             x = torch.nn.functional.relu(x)
 
-        for _ in range(self.num_blocks):
-            x = self.resblocks(x)
+
+        ### NEW LOGIC FOR RECURRENCE ###
+        if self.recur:
+            for _ in range(self.num_blocks):
+                x = self.resblocks(x)
+        else:
+            for block in self.resblocks:
+                x = block(x)
         return x
 
 
@@ -449,6 +470,7 @@ class MuZeroResidualNetwork(AbstractNetwork):
         fc_policy_layers,
         support_size,
         downsample,
+        recur=False,
     ):
         super().__init__()
         self.action_space_size = action_space_size
@@ -490,6 +512,7 @@ class MuZeroResidualNetwork(AbstractNetwork):
                 num_blocks,
                 num_channels,
                 downsample,
+                recur=recur,
             )
         )
 
@@ -518,6 +541,7 @@ class MuZeroResidualNetwork(AbstractNetwork):
                 block_output_size_policy,
             )
         )
+        self.recur=recur
 
     def prediction(self, encoded_state):
         policy, value = self.prediction_network(encoded_state)

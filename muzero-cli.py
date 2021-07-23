@@ -604,15 +604,22 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser()
         parser.add_argument('--game', choices=games, help='Game to use as domain', default="connect4")
         parser.add_argument('--option', choices=options, help='What to do with the selected game', default="Train")
-        
+        parser.add_argument('--recur', type=bool, help='Whether or not to build a rnn', default=False)
+
         args = parser.parse_args()
 
         if args.game not in games:
             print("Invalid game, exiting")
             exit(1)
 
+        ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
+        config = {'recur': False}
+        if args.recur:
+            config = {'recur': True}
+
         # Initialize MuZero
-        muzero = MuZero(args.game)
+        muzero = MuZero(args.game, config=config)
+
         if args.option not in options:
             print("Invalid option, exiting")
             exit(1)

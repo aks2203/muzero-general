@@ -605,6 +605,7 @@ if __name__ == "__main__":
         parser.add_argument('--game', choices=games, help='Game to use as domain', default="connect4")
         parser.add_argument('--option', choices=options, help='What to do with the selected game', default="Train")
         parser.add_argument('--recur', type=bool, help='Whether or not to build a rnn', default=False)
+        parser.add_argument('--added_depth', type=int, help='Number of additional recurrence iterations to run for the rnn', default=1)
 
         args = parser.parse_args()
 
@@ -613,9 +614,9 @@ if __name__ == "__main__":
             exit(1)
 
         ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
-        config = {'recur': False}
+        config = {'recur': False, 'added_depth': 0}
         if args.recur:
-            config = {'recur': True}
+            config = {'recur': True, 'added_depth': args.added_depth}
 
         # Initialize MuZero
         muzero = MuZero(args.game, config=config)

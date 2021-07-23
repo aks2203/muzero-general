@@ -35,8 +35,9 @@ class MuZeroNetwork:
                 config.resnet_fc_policy_layers,
                 config.support_size,
                 config.downsample,
-                ### NEW ARGUMENT ###
+                ### NEW ARGUMENTS ###
                 recur = config.recur,
+                added_depth=config.added_depth,
             )
 
         else:
@@ -310,6 +311,7 @@ class RepresentationNetwork(torch.nn.Module):
         num_channels,
         downsample,
         recur=False,
+        added_depth=0,
     ):
         super().__init__()
         self.recur = recur
@@ -346,9 +348,11 @@ class RepresentationNetwork(torch.nn.Module):
         ### NEW LOGIC FOR RECURRENCE ###
         if self.recur:
             self.resblocks = ResidualBlock(num_channels)
-            self.num_blocks = num_blocks+1
+            self.num_blocks = num_blocks+added_depth
             print("Using Recurrent Network")
-            print(f"\n\n\n\tNum resblocks: {num_blocks}\n\n\n")
+            print(f"\n\tNum resblocks: {num_blocks}\n")
+            print(f"\n\tAdded depth: {added_depth}\n")
+            print(f"\n\tTotal depth: {self.num_blocks}\n")
         else:
             self.resblocks = torch.nn.ModuleList(
                 [ResidualBlock(num_channels) for _ in range(num_blocks)]
@@ -471,6 +475,7 @@ class MuZeroResidualNetwork(AbstractNetwork):
         support_size,
         downsample,
         recur=False,
+        added_depth=0,
     ):
         super().__init__()
         self.action_space_size = action_space_size
@@ -513,6 +518,7 @@ class MuZeroResidualNetwork(AbstractNetwork):
                 num_channels,
                 downsample,
                 recur=recur,
+                added_depth=added_depth,
             )
         )
 

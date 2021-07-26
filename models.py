@@ -670,7 +670,7 @@ def mlp(
     layers = []
     for i in range(len(sizes) - 1):
         act = activation if i < len(sizes) - 2 else output_activation
-        layers += [torch.nn.L6006inear(sizes[i], sizes[i + 1]), act()]
+        layers += [torch.nn.Linear(sizes[i], sizes[i + 1]), act()]
     return torch.nn.Sequential(*layers)
 
 

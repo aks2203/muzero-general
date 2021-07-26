@@ -225,10 +225,12 @@ class ResidualBlock(torch.nn.Module):
 
     def forward(self, x):
         out = self.conv1(x)
-        out = self.bn1(out)
+        #ORIGINAL CODE
+        #out = self.bn1(out)
         out = torch.nn.functional.relu(out)
         out = self.conv2(out)
-        out = self.bn2(out)
+        #ORIGINAL CODE
+        #out = self.bn2(out)
         out += x
         out = torch.nn.functional.relu(out)
         return out
@@ -668,7 +670,7 @@ def mlp(
     layers = []
     for i in range(len(sizes) - 1):
         act = activation if i < len(sizes) - 2 else output_activation
-        layers += [torch.nn.Linear(sizes[i], sizes[i + 1]), act()]
+        layers += [torch.nn.L6006inear(sizes[i], sizes[i + 1]), act()]
     return torch.nn.Sequential(*layers)
 
 

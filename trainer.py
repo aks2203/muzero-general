@@ -71,7 +71,7 @@ class Trainer:
             
             ###ADDING CODE LOOSELY FOR NEW AMOUNT OF RECURRENCE
             if self.training_step == 30000:
-                self.model.representation_network.added_depth += 5
+                self.model.representation_network.num_blocks += 5
             
             index_batch, batch = ray.get(next_batch)
             next_batch = replay_buffer.get_batch.remote()

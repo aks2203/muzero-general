@@ -17,7 +17,7 @@ class Trainer:
 
     def __init__(self, initial_checkpoint, config):
         self.config = config
-
+        self.notyetchanged = True
         # Fix random generator seed
         numpy.random.seed(self.config.seed)
         torch.manual_seed(self.config.seed)
@@ -69,10 +69,14 @@ class Trainer:
             shared_storage.get_info.remote("terminate")
         ):
             
-            ###ADDING CODE LOOSELY FOR NEW AMOUNT OF RECURRENCE
-            if self.training_step == 30000:
-                self.model.representation_network.num_blocks += 5
             
+            ###ADDING CODE LOOSELY FOR NEW AMOUNT OF RECURRENCE
+            if self.training_step >= 70000 and self.notyetchanged:
+                self.model.representation_network.num_blocks += 5
+                self.notyetchanged = False
+                print("changing recurrence")
+            
+
             index_batch, batch = ray.get(next_batch)
             next_batch = replay_buffer.get_batch.remote()
             self.update_lr()

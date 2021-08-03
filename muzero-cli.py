@@ -605,7 +605,7 @@ if __name__ == "__main__":
         parser.add_argument('--game', choices=games, help='Game to use as domain', default="connect4")
         parser.add_argument('--option', choices=options, help='What to do with the selected game', default="Train")
         parser.add_argument('--recur', type=bool, help='Whether or not to build a rnn', default=False)
-        parser.add_argument('--added_depth', type=int, help='Number of additional recurrence iterations to run for the rnn', default=1)
+        parser.add_argument('--added_depth', type=int, help='Number of additional recurrence iterations to run for the rnn', default=3)
 
         args = parser.parse_args()
 

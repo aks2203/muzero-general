@@ -616,7 +616,12 @@ if __name__ == "__main__":
         # Initialize MuZero
         choice = int(choice)
         game_name = games[choice]
-        muzero = MuZero(game_name)
+
+        #ADDING TO PRESERVE FUNCTIONALITY OF muzero.py.
+        #SHOULD NOT CAUSE ANY RECURRENCE
+        config = {'recur': False, 'added_depth': 0}
+        #muzero = MuZero(game_name)
+        muzero = MuZero(game_name, config=config)
 
         while True:
             # Configure running options

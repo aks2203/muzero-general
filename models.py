@@ -511,17 +511,18 @@ class MuZeroResidualNetwork(AbstractNetwork):
             if downsample
             else (reduced_channels_policy * observation_shape[1] * observation_shape[2])
         )
-
-        self.representation_network = torch.nn.DataParallel(
-            RepresentationNetwork(
-                observation_shape,
-                stacked_observations,
-                num_blocks,
-                num_channels,
-                downsample,
-                recur=recur,
-                added_depth=added_depth,
-            )
+        
+        #ORIGINAL CODE BELOW
+        #self.representation_network = torch.nn.DataParallel(
+        
+        self.representation_network = RepresentationNetwork(
+            observation_shape,
+            stacked_observations,
+            num_blocks,
+            num_channels,
+            downsample,
+            recur=recur,
+            added_depth=added_depth,
         )
 
         self.dynamics_network = torch.nn.DataParallel(

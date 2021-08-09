@@ -14,7 +14,7 @@ class SelfPlay:
     Class which run in a dedicated thread to play games and save them to the replay-buffer.
     """
 
-    def __init__(self, initial_checkpoint, Game, config, seed):
+    def __init__(self, initial_checkpoint, Game, config, seed, opponent_config=None, opponent_checkpoint=None):
         self.config = config
         self.game = Game(seed)
 
@@ -27,7 +27,18 @@ class SelfPlay:
         self.model.set_weights(initial_checkpoint["weights"])
         self.model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
         self.model.eval()
-
+        
+        ### ADDING THIS SECTION TO STORE THE OPPONENT IN SELF PLAY ###  
+        # Initialize opponent network
+        self.opponent_config=opponent_config
+        self.opponent_model=None
+        if self.opponent_config is not None:
+            self.opponent_model = models.MuZeroNetwork(opponent_config)
+            self.opponent_model.set_weights(opponent_checkpoint["weights"])
+            self.opponent_model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+            self.opponent_model.eval()
+        ######################## END ADDITION #######################
+    
     def continuous_self_play(self, shared_storage, replay_buffer, test_mode=False):
         while ray.get(
             shared_storage.get_info.remote("training_step")
@@ -108,7 +119,7 @@ class SelfPlay:
         self.close_game()
 
     def play_game(
-        self, temperature, temperature_threshold, render, opponent, muzero_player
+        self, temperature, temperature_threshold, render, opponent, muzero_player, 
     ):
         """
         Play one game with actions based on the Monte Carlo tree search at each moves.
@@ -121,7 +132,11 @@ class SelfPlay:
         game_history.to_play_history.append(self.game.to_play())
 
         done = False
-
+        
+        ##### ADDING BOOLEAN TO KEEP TRACK OF TURNS #####
+        opponent_goes = False
+        ################# END ADDITION ##################
+        
         if render:
             self.game.render()
 
@@ -141,7 +156,40 @@ class SelfPlay:
                 )
 
                 # Choose the action
-                if opponent == "self" or muzero_player == self.game.to_play():
+
+                ##### ADDING THIS FOR COMPTETITIVE PLAY (RESNET VS RNN) #####
+                if opponent == "rnn-test":
+                    
+                    #flip-flop between who goes
+                    if opponent_goes:
+                        acting_model = self.opponent_model
+                        acting_config = self.opponent_config
+                    else: 
+                        acting_model = self.model
+                        acting_config = self.config
+                        
+                    #get the next action
+                    root, mcts_info = MCTS(acting_config).run(
+                        acting_model,
+                        stacked_observations,
+                        self.game.legal_actions(),
+                        self.game.to_play(),
+                        True,
+                    )
+                    action = self.select_action(
+                        root,
+                        temperature
+                        if not temperature_threshold
+                        or len(game_history.action_history) < temperature_threshold
+                        else 0,
+                    )
+
+                    #swap whose turn it is
+                    opponent_goes = not opponent_goes
+                ####################### END ADDITION ########################
+                
+                
+                elif opponent == "self" or muzero_player == self.game.to_play():
                     root, mcts_info = MCTS(self.config).run(
                         self.model,
                         stacked_observations,

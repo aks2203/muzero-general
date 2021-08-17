@@ -510,8 +510,9 @@ if __name__ == "__main__":
         ]
         parser = argparse.ArgumentParser()
         parser.add_argument('--game', choices=games, help='Game to use as domain', default="connect4")
-        parser.add_argument('--added_depth', type=int, help='Number of additional recurrence iterations to run for player 1 rnn', default=0) 
-        parser.add_argument('--rnn_first', type=bool, help='Will the rnn make the first move?', default=False)
+        parser.add_argument('--added_depth_1', type=int, help='Number of additional recurrence iterations to run for player 1 rnn', default=0) 
+        parser.add_argument('--added_depth_2', type=int, help='Number of additional recurrence iterations to run for player 2 rnn', default=0) 
+        parser.add_argument('--p1_first', type=bool, help='Will the rnn make the first move?', default=False)
         parser.add_argument('--num_tests', type=int, help='Number of games to average', default=1)
         parser.add_argument('--render', type=bool, help='Display each step to screen?', default=False)
         args = parser.parse_args()
@@ -521,26 +522,24 @@ if __name__ == "__main__":
             exit(1)
 
         ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
-        rnn_config_1 = {'recur': True, 'added_depth': args.added_depth}
-        resnet_config = {'recur': False, 'added_depth': 0}
+        rnn_config_1 = {'recur': True, 'added_depth': args.added_depth_1}
+        rnn_config_2 = {'recur': True, 'added_depth': args.added_depth_2}
         
         # Initialize MuZero object for both players 
-        rnn = MuZero(args.game, config=rnn_config_1)
-        resnet = MuZero(args.game, config=resnet_config)
+        player_1 = MuZero(args.game, config=rnn_config_1)
+        player_2 = MuZero(args.game, config=rnn_config_2)
 
         # Loading model for each network
-        print("********************** PICK RNN ***********************")
-        load_model_menu(rnn, args.game)
-        print("********************* PICK RESNET *********************")
-        load_model_menu(resnet, args.game)
+        print("******************** PICK PLAYER 1 *********************")
+        load_model_menu(player_1, args.game)
+        print("******************** PICK PLAYER 2 *********************")
+        load_model_menu(player_2, args.game)
         
         # Play models against each_other
-        if args.rnn_first:
-            print("RNN moves first!")
-            result = rnn.test(resnet, render=args.render, opponent='rnn-test', muzero_player=1, num_tests=args.num_tests, num_gpus=1) 
+        if args.p1_first:
+            result = player_1.test(player_2, render=args.render, opponent='rnn-test', muzero_player=1, num_tests=args.num_tests, num_gpus=1) 
         else:
-            print("ResNet moves first!")
-            result = resnet.test(rnn, render=args.render, opponent='rnn-test', muzero_player=0, num_tests=args.num_tests, num_gpus=1)
+            result = player_2.test(player_1, render=args.render, opponent='rnn-test', muzero_player=0, num_tests=args.num_tests, num_gpus=1)
         
         print("Averaged result: ")
         print(result)

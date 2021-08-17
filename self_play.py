@@ -162,9 +162,11 @@ class SelfPlay:
                     
                     #flip-flop between who goes
                     if opponent_goes:
+                        print("Player 2's turn")
                         acting_model = self.opponent_model
                         acting_config = self.opponent_config
                     else: 
+                        print("Player 1's turn")
                         acting_model = self.model
                         acting_config = self.config
                         
@@ -183,7 +185,6 @@ class SelfPlay:
                         or len(game_history.action_history) < temperature_threshold
                         else 0,
                     )
-
                     #swap whose turn it is
                     opponent_goes = not opponent_goes
                 ####################### END ADDITION ########################

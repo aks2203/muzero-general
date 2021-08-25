@@ -395,49 +395,6 @@ class MuZero:
             )
         return result
 
-    def load_model(self, checkpoint_path=None, replay_buffer_path=None):
-        """
-        Load a model and/or a saved replay buffer.
-
-        Args:
-            checkpoint_path (str): Path to model.checkpoint or model.weights.
-
-            replay_buffer_path (str): Path to replay_buffer.pkl
-        """
-        # Load checkpoint
-        if checkpoint_path:
-            if os.path.exists(checkpoint_path):
-                self.checkpoint = torch.load(checkpoint_path)
-                print(f"\nUsing checkpoint from {checkpoint_path}")
-            else:
-                print(f"\nThere is no model saved in {checkpoint_path}.")
-
-        # Load replay buffer
-        if replay_buffer_path:
-            if os.path.exists(replay_buffer_path):
-                with open(replay_buffer_path, "rb") as f:
-                    replay_buffer_infos = pickle.load(f)
-                self.replay_buffer = replay_buffer_infos["buffer"]
-                self.checkpoint["num_played_steps"] = replay_buffer_infos[
-                    "num_played_steps"
-                ]
-                self.checkpoint["num_played_games"] = replay_buffer_infos[
-                    "num_played_games"
-                ]
-                self.checkpoint["num_reanalysed_games"] = replay_buffer_infos[
-                    "num_reanalysed_games"
-                ]
-
-                print(f"\nInitializing replay buffer with {replay_buffer_path}")
-            else:
-                print(
-                    f"Warning: Replay buffer path '{replay_buffer_path}' doesn't exist.  Using empty buffer."
-                )
-                self.checkpoint["training_step"] = 0
-                self.checkpoint["num_played_steps"] = 0
-                self.checkpoint["num_played_games"] = 0
-                self.checkpoint["num_reanalysed_games"] = 0
-
     def diagnose_model(self, horizon):
         """
         Play a game only with the learned model then play the same trajectory in the real
@@ -593,7 +550,7 @@ def load_model_menu(muzero, game_name):
 
 if __name__ == "__main__":
 
-        options = ["Train", "Load", "Diagnose", "Render", "Play", "Test", "HyperparameterSearch"]
+        options = ["Train", "Load", "Diagnose", "Render", "Play", "Test", "HyperparameterSearch", "TestRecurrence"]
         games = [
             filename[:-3]
             for filename in sorted(
@@ -604,8 +561,12 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser()
         parser.add_argument('--game', choices=games, help='Game to use as domain', default="connect4")
         parser.add_argument('--option', choices=options, help='What to do with the selected game', default="Train")
-        parser.add_argument('--recur', type=bool, help='Whether or not to build a rnn', default=False)
-        parser.add_argument('--added_depth', type=int, help='Number of additional recurrence iterations to run for the rnn', default=3)
+        parser.add_argument('--recur_representation', type=bool, help='Whether or not to have recurrence in the representation network', default=False)
+        parser.add_argument('--added_depth_representation', type=int, help='Number of additional recurrence iterations to run in the representation network', default=3)
+        parser.add_argument('--recur_dynamics', type=bool, help='Whether or not to have recurrence in the dynamics network', default=False)
+        parser.add_argument('--added_depth_dynamics', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=3)
+        parser.add_argument('--recur_prediction', type=bool, help='Whether or not to have recurrence in the prediction network', default=False)
+        parser.add_argument('--added_depth_prediction', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=3)
 
         args = parser.parse_args()
 
@@ -614,10 +575,21 @@ if __name__ == "__main__":
             exit(1)
 
         ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
-        config = {'recur': False, 'added_depth': 0}
-        if args.recur:
-            config = {'recur': True, 'added_depth': args.added_depth}
+        config = {
+            'recur_representation': False, 'added_depth_representation': 0,
+            'recur_dynamics': False, 'added_depth_dynamics': 0,
+            'recur_prediction': False, 'added_depth_prediction': 0
+        }
 
+        if args.recur_representation or args.recur_dynamics or args.recur_prediction:
+            config = {
+                'recur_representation': args.recur_representation, 
+                'added_depth_representation': args.added_depth_representation,
+                'recur_dynamics': args.recur_dynamics, 
+                'added_depth_dynamics': args.added_depth_dynamics,
+                'recur_prediction': args.recur_prediction, 
+                'added_depth_prediction': args.added_depth_prediction
+            }
         # Initialize MuZero
         muzero = MuZero(args.game, config=config)
 

@@ -20,7 +20,6 @@ class MuZeroNetwork:
                 config.support_size,
             )
         elif config.network == "resnet":
-            
             return MuZeroResidualNetwork(
                 config.observation_shape,
                 config.stacked_observations,
@@ -35,9 +34,13 @@ class MuZeroNetwork:
                 config.resnet_fc_policy_layers,
                 config.support_size,
                 config.downsample,
-                ### NEW ARGUMENTS ###
-                recur = config.recur,
-                added_depth=config.added_depth,
+                ### NEW ARGUMENTS FOR RNN ###
+                recur_r = config.recur_representation,
+                added_depth_r=config.added_depth_representation,
+                recur_d = config.recur_dynamics,
+                added_depth_d=config.added_depth_dynamics,
+                recur_p = config.recur_prediction,
+                added_depth_p = config.added_depth_prediction
             )
 
         else:
@@ -351,10 +354,10 @@ class RepresentationNetwork(torch.nn.Module):
         if self.recur:
             self.resblocks = ResidualBlock(num_channels)
             self.num_blocks = num_blocks+added_depth
-            print("Using Recurrent Network")
-            print(f"\n\tNum resblocks: {num_blocks}\n")
-            print(f"\n\tAdded depth: {added_depth}\n")
-            print(f"\n\tTotal depth: {self.num_blocks}\n")
+            print("Using Recurrent Representation Network")
+            print(f"\tNum resblocks: {num_blocks}")
+            print(f"\tAdded depth: {added_depth}")
+            print(f"\tTotal depth: {self.num_blocks}")
         else:
             self.resblocks = torch.nn.ModuleList(
                 [ResidualBlock(num_channels) for _ in range(num_blocks)]
@@ -389,13 +392,31 @@ class DynamicsNetwork(torch.nn.Module):
         fc_reward_layers,
         full_support_size,
         block_output_size_reward,
+        recur=False,
+        added_depth=0,
     ):
         super().__init__()
+        self.recur = recur
         self.conv = conv3x3(num_channels, num_channels - 1)
         self.bn = torch.nn.BatchNorm2d(num_channels - 1)
-        self.resblocks = torch.nn.ModuleList(
-            [ResidualBlock(num_channels - 1) for _ in range(num_blocks)]
-        )
+
+        # ORIGINAL CODE
+        #self.resblocks = torch.nn.ModuleList(
+        #    [ResidualBlock(num_channels - 1) for _ in range(num_blocks)]
+        #)
+
+        # NEW LOGIC FOR RECURRENCE
+        if self.recur:
+            self.resblocks = ResidualBlock(num_channels - 1)
+            self.num_blocks = num_blocks+added_depth
+            print("Using Recurrent Dynamics Network")
+            print(f"\tNum resblocks: {num_blocks}")
+            print(f"\tAdded depth: {added_depth}")
+            print(f"\tTotal depth: {self.num_blocks}")
+        else:
+            self.resblocks = torch.nn.ModuleList(
+                [ResidualBlock(num_channels - 1) for _ in range(num_blocks)]
+            )
 
         self.conv1x1_reward = torch.nn.Conv2d(
             num_channels - 1, reduced_channels_reward, 1
@@ -409,8 +430,15 @@ class DynamicsNetwork(torch.nn.Module):
         x = self.conv(x)
         x = self.bn(x)
         x = torch.nn.functional.relu(x)
-        for block in self.resblocks:
-            x = block(x)
+
+        # New logic for recurrence
+        if self.recur:
+            for _ in range(self.num_blocks):
+                x = self.resblocks(x)
+        else:
+            for block in self.resblocks:
+                x = block(x)
+
         state = x
         x = self.conv1x1_reward(x)
         x = x.view(-1, self.block_output_size_reward)
@@ -431,11 +459,29 @@ class PredictionNetwork(torch.nn.Module):
         full_support_size,
         block_output_size_value,
         block_output_size_policy,
+        recur=False,
+        added_depth=0,
     ):
         super().__init__()
-        self.resblocks = torch.nn.ModuleList(
-            [ResidualBlock(num_channels) for _ in range(num_blocks)]
-        )
+        self.recur = recur
+        
+        # Original Code
+        #self.resblocks = torch.nn.ModuleList(
+        #    [ResidualBlock(num_channels) for _ in range(num_blocks)]
+        #)
+
+        # New logic for RNN
+        if self.recur:
+            self.resblocks = ResidualBlock(num_channels)
+            self.num_blocks = num_blocks+added_depth
+            print("Using Recurrent Prediction Network")
+            print(f"\tNum resblocks: {num_blocks}")
+            print(f"\tAdded depth: {added_depth}")
+            print(f"\tTotal depth: {self.num_blocks}")
+        else:
+            self.resblocks = torch.nn.ModuleList(
+                [ResidualBlock(num_channels) for _ in range(num_blocks)]
+            )
 
         self.conv1x1_value = torch.nn.Conv2d(num_channels, reduced_channels_value, 1)
         self.conv1x1_policy = torch.nn.Conv2d(num_channels, reduced_channels_policy, 1)
@@ -449,8 +495,19 @@ class PredictionNetwork(torch.nn.Module):
         )
 
     def forward(self, x):
-        for block in self.resblocks:
-            x = block(x)
+
+        # New logic for RNN
+        if self.recur:
+            for _ in range(self.num_blocks):
+                x = self.resblocks(x)
+        else:
+            for block in self.resblocks:
+                x = block(x)
+        
+        #OLD CODE
+        #for block in self.resblocks:
+        #    x = block(x)
+        
         value = self.conv1x1_value(x)
         policy = self.conv1x1_policy(x)
         value = value.view(-1, self.block_output_size_value)
@@ -476,8 +533,12 @@ class MuZeroResidualNetwork(AbstractNetwork):
         fc_policy_layers,
         support_size,
         downsample,
-        recur=False,
-        added_depth=0,
+        recur_r=False,
+        added_depth_r=0,
+        recur_d=False,
+        added_depth_d=0,
+        recur_p=False,
+        added_depth_p=0
     ):
         super().__init__()
         self.action_space_size = action_space_size
@@ -521,36 +582,41 @@ class MuZeroResidualNetwork(AbstractNetwork):
             num_blocks,
             num_channels,
             downsample,
-            recur=recur,
-            added_depth=added_depth,
+            recur=recur_r,
+            added_depth=added_depth_r,
         )
 
-        self.dynamics_network = torch.nn.DataParallel(
-            DynamicsNetwork(
-                num_blocks,
-                num_channels + 1,
-                reduced_channels_reward,
-                fc_reward_layers,
-                self.full_support_size,
-                block_output_size_reward,
-            )
+        #ORIGINAL CODE BELOW
+        #self.dynamics_network = torch.nn.DataParallel(
+       
+        self.dynamics_network = DynamicsNetwork(
+            num_blocks,
+            num_channels + 1,
+            reduced_channels_reward,
+            fc_reward_layers,
+            self.full_support_size,
+            block_output_size_reward,
+            recur=recur_d,
+            added_depth=added_depth_d
         )
-
-        self.prediction_network = torch.nn.DataParallel(
-            PredictionNetwork(
-                action_space_size,
-                num_blocks,
-                num_channels,
-                reduced_channels_value,
-                reduced_channels_policy,
-                fc_value_layers,
-                fc_policy_layers,
-                self.full_support_size,
-                block_output_size_value,
-                block_output_size_policy,
-            )
+        
+        #ORIGINAL CODE BELOW
+        #self.prediction_network = torch.nn.DataParallel(
+        self.prediction_network = PredictionNetwork(
+            action_space_size,
+            num_blocks,
+            num_channels,
+            reduced_channels_value,
+            reduced_channels_policy,
+            fc_value_layers,
+            fc_policy_layers,
+            self.full_support_size,
+            block_output_size_value,
+            block_output_size_policy,
+            recur=recur_p,
+            added_depth=added_depth_p
         )
-        self.recur=recur
+        self.recur=recur_r #or recur_p or recur_d
 
     def prediction(self, encoded_state):
         policy, value = self.prediction_network(encoded_state)

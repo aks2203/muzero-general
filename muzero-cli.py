@@ -561,12 +561,12 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser()
         parser.add_argument('--game', choices=games, help='Game to use as domain', default="connect4")
         parser.add_argument('--option', choices=options, help='What to do with the selected game', default="Train")
-        parser.add_argument('--recur_representation', type=bool, help='Whether or not to have recurrence in the representation network', default=False)
-        parser.add_argument('--added_depth_representation', type=int, help='Number of additional recurrence iterations to run in the representation network', default=3)
-        parser.add_argument('--recur_dynamics', type=bool, help='Whether or not to have recurrence in the dynamics network', default=False)
-        parser.add_argument('--added_depth_dynamics', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=3)
-        parser.add_argument('--recur_prediction', type=bool, help='Whether or not to have recurrence in the prediction network', default=False)
-        parser.add_argument('--added_depth_prediction', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=3)
+        parser.add_argument('--recur_representation', help='Whether or not to have recurrence in the representation network', action='store_true')
+        parser.add_argument('--added_depth_representation', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
+        parser.add_argument('--recur_dynamics', help='Whether or not to have recurrence in the dynamics network', action='store_true')
+        parser.add_argument('--added_depth_dynamics', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=0)
+        parser.add_argument('--recur_prediction', help='Whether or not to have recurrence in the prediction network', action='store_true')
+        parser.add_argument('--added_depth_prediction', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
 
         args = parser.parse_args()
 
@@ -576,20 +576,13 @@ if __name__ == "__main__":
 
         ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
         config = {
-            'recur_representation': False, 'added_depth_representation': 0,
-            'recur_dynamics': False, 'added_depth_dynamics': 0,
-            'recur_prediction': False, 'added_depth_prediction': 0
+            'recur_representation': args.recur_representation, 
+            'added_depth_representation': args.added_depth_representation,
+            'recur_dynamics': args.recur_dynamics, 
+            'added_depth_dynamics': args.added_depth_dynamics,
+            'recur_prediction': args.recur_prediction, 
+            'added_depth_prediction': args.added_depth_prediction
         }
-
-        if args.recur_representation or args.recur_dynamics or args.recur_prediction:
-            config = {
-                'recur_representation': args.recur_representation, 
-                'added_depth_representation': args.added_depth_representation,
-                'recur_dynamics': args.recur_dynamics, 
-                'added_depth_dynamics': args.added_depth_dynamics,
-                'recur_prediction': args.recur_prediction, 
-                'added_depth_prediction': args.added_depth_prediction
-            }
         # Initialize MuZero
         muzero = MuZero(args.game, config=config)
 

@@ -510,11 +510,25 @@ if __name__ == "__main__":
         ]
         parser = argparse.ArgumentParser()
         parser.add_argument('--game', choices=games, help='Game to use as domain', default="connect4")
-        parser.add_argument('--added_depth_1', type=int, help='Number of additional recurrence iterations to run for player 1 rnn', default=0) 
-        parser.add_argument('--added_depth_2', type=int, help='Number of additional recurrence iterations to run for player 2 rnn', default=0) 
-        parser.add_argument('--p1_first', type=bool, help='Will the rnn make the first move?', default=False)
         parser.add_argument('--num_tests', type=int, help='Number of games to average', default=1)
-        parser.add_argument('--render', type=bool, help='Display each step to screen?', default=False)
+        parser.add_argument('--render', help='Display each step to screen?', action='store_true')
+        parser.add_argument('--p2_first', help='2nd model moves first', action='store_true')
+
+        #1ST MODEL'S ARGUMENTS
+        parser.add_argument('--recur_representation_1', help='Whether or not to have recurrence in the representation network', action='store_true')
+        parser.add_argument('--added_depth_representation_1', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
+        parser.add_argument('--recur_dynamics_1', help='Whether or not to have recurrence in the dynamics network', action='store_true')
+        parser.add_argument('--added_depth_dynamics_1', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=0)
+        parser.add_argument('--recur_prediction_1', help='Whether or not to have recurrence in the prediction network', action='store_true')
+        parser.add_argument('--added_depth_prediction_1', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
+
+        #2ND MODEL'S ARGUMENTS
+        parser.add_argument('--recur_representation_2', help='Whether or not to have recurrence in the representation network', action='store_true')
+        parser.add_argument('--added_depth_representation_2', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
+        parser.add_argument('--recur_dynamics_2', help='Whether or not to have recurrence in the dynamics network', action='store_true')
+        parser.add_argument('--added_depth_dynamics_2', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=0)
+        parser.add_argument('--recur_prediction_2', help='Whether or not to have recurrence in the prediction network', action='store_true')
+        parser.add_argument('--added_depth_prediction_2', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
         args = parser.parse_args()
 
         if args.game not in games:
@@ -522,9 +536,23 @@ if __name__ == "__main__":
             exit(1)
 
         ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
-        rnn_config_1 = {'recur': True, 'added_depth': args.added_depth_1}
-        rnn_config_2 = {'recur': True, 'added_depth': args.added_depth_2}
-        
+        rnn_config_1 = {
+            'recur_representation': args.recur_representation_1,
+            'added_depth_representation': args.added_depth_representation_1,
+            'recur_dynamics': args.recur_dynamics_1,
+            'added_depth_dynamics': args.added_depth_dynamics_1,
+            'recur_prediction': args.recur_prediction_1,
+            'added_depth_prediction': args.added_depth_prediction_1
+        } 
+        rnn_config_2 = {
+            'recur_representation': args.recur_representation_2,
+            'added_depth_representation': args.added_depth_representation_2,
+            'recur_dynamics': args.recur_dynamics_2,
+            'added_depth_dynamics': args.added_depth_dynamics_2,
+            'recur_prediction': args.recur_prediction_2,
+            'added_depth_prediction': args.added_depth_prediction_2
+        }
+
         # Initialize MuZero object for both players 
         player_1 = MuZero(args.game, config=rnn_config_1)
         player_2 = MuZero(args.game, config=rnn_config_2)
@@ -536,10 +564,10 @@ if __name__ == "__main__":
         load_model_menu(player_2, args.game)
         
         # Play models against each_other
-        if args.p1_first:
-            result = player_1.test(player_2, render=args.render, opponent='rnn-test', muzero_player=1, num_tests=args.num_tests, num_gpus=1) 
+        if args.p2_first:
+            result = player_2.test(player_1, render=args.render, opponent='rnn-test', muzero_player=1, num_tests=args.num_tests, num_gpus=1) 
         else:
-            result = player_2.test(player_1, render=args.render, opponent='rnn-test', muzero_player=0, num_tests=args.num_tests, num_gpus=1)
+            result = player_1.test(player_2, render=args.render, opponent='rnn-test', muzero_player=0, num_tests=args.num_tests, num_gpus=1)
         
         print("Averaged result: ")
         print(result)

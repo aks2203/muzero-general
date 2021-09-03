@@ -1,14 +1,17 @@
 import copy
+import datetime
 import importlib
 import math
 import os
 import pickle
 import sys
 import time
+import uuid
 from glob import glob
 
 import nevergrad
 import numpy
+import pandas as pd
 import ray
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -20,6 +23,7 @@ import self_play
 import shared_storage
 import trainer
 import argparse
+
 
 class MuZero:
     """
@@ -515,6 +519,7 @@ if __name__ == "__main__":
         parser.add_argument('--p2_first', help='2nd model moves first', action='store_true')
 
         #1ST MODEL'S ARGUMENTS
+        parser.add_argument('--chkpt_1', type=str, default=None, help='Path to player 1 checkpoint')
         parser.add_argument('--recur_representation_1', help='Whether or not to have recurrence in the representation network', action='store_true')
         parser.add_argument('--added_depth_representation_1', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
         parser.add_argument('--recur_dynamics_1', help='Whether or not to have recurrence in the dynamics network', action='store_true')
@@ -523,6 +528,7 @@ if __name__ == "__main__":
         parser.add_argument('--added_depth_prediction_1', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
 
         #2ND MODEL'S ARGUMENTS
+        parser.add_argument('--chkpt_2', type=str, default=None, help='Path to player 2 checkpoint')
         parser.add_argument('--recur_representation_2', help='Whether or not to have recurrence in the representation network', action='store_true')
         parser.add_argument('--added_depth_representation_2', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
         parser.add_argument('--recur_dynamics_2', help='Whether or not to have recurrence in the dynamics network', action='store_true')
@@ -557,18 +563,50 @@ if __name__ == "__main__":
         player_1 = MuZero(args.game, config=rnn_config_1)
         player_2 = MuZero(args.game, config=rnn_config_2)
 
-        # Loading model for each network
-        print("******************** PICK PLAYER 1 *********************")
-        load_model_menu(player_1, args.game)
-        print("******************** PICK PLAYER 2 *********************")
-        load_model_menu(player_2, args.game)
-        
+        for chkpt, player in zip([args.chkpt_1, args.chkpt_2], [player_1, player_2]):
+            checkpoint_path = os.path.join(chkpt, "model.checkpoint")
+            replay_buffer_path = os.path.join(chkpt, "replay_buffer.pkl")
+            player.load_model(checkpoint_path=checkpoint_path,
+                              replay_buffer_path=replay_buffer_path)
+
+        # Initialize DataFrame for storing results
+        col_list = ["checkpoint_one", "checkpoint_two"] + \
+                   [f"{k}_1" for k in rnn_config_1.keys()] + \
+                   [f"{k}_2" for k in rnn_config_2.keys()] + \
+                   ["who_goes_first", "winner"]
+
+        results_df = pd.DataFrame(columns=col_list)
+        df_entry_template = {"checkpoint_one": args.chkpt_1,
+                             "checkpoint_two": args.chkpt_2}
+        for k in rnn_config_1.keys():
+            df_entry_template[f"{k}_1"] = rnn_config_1[k]
+            df_entry_template[f"{k}_2"] = rnn_config_2[k]
+
         # Play models against each_other
-        if args.p2_first:
-            result = player_2.test(player_1, render=args.render, opponent='rnn-test', muzero_player=1, num_tests=args.num_tests, num_gpus=1) 
-        else:
-            result = player_1.test(player_2, render=args.render, opponent='rnn-test', muzero_player=0, num_tests=args.num_tests, num_gpus=1)
-        
-        print("Averaged result: ")
-        print(result)
+        player_1_goes_first = True
+        for game_num in range(args.num_tests):
+            if player_1_goes_first:
+                test_reward = player_1.test(player_2, render=args.render,
+                                            opponent='rnn-test', muzero_player=0,
+                                            num_tests=1, num_gpus=1)
+                winner = 1 if test_reward == 10 else 2
+            else:
+                test_reward = player_2.test(player_1, render=args.render,
+                                            opponent='rnn-test', muzero_player=0,
+                                            num_tests=1, num_gpus=1)
+                winner = 2 if test_reward == 10 else 1
+
+            result_dict = df_entry_template.copy()
+            result_dict["who_goes_first"] = 1 if player_1_goes_first else 2
+            result_dict["winner"] = winner
+            print("reward: ", test_reward)
+            results_df = results_df.append(result_dict, ignore_index=True)
+            player_1_goes_first = not player_1_goes_first
+
+        save_dir = f"results/connect4/pickled_dfs/{args.chkpt_1.split('/')[-1]}+{args.chkpt_2.split('/')[-1]}"
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        path_to_save = os.path.join(save_dir, f"{uuid.uuid1().hex}.pkl")
+        results_df.to_pickle(path_to_save)
         ray.shutdown()

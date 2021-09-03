@@ -21,6 +21,7 @@ import shared_storage
 import trainer
 import argparse
 
+
 class MuZero:
     """
     Main class to manage MuZero.
@@ -501,47 +502,47 @@ def load_model_menu(muzero, game_name):
 
 if __name__ == "__main__":
 
-        games = [
-            filename[:-3]
-            for filename in sorted(
-                os.listdir(os.path.dirname(os.path.realpath(__file__)) + "/games")
-            )
-            if filename.endswith(".py") and filename != "abstract_game.py"
-        ]
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--game', choices=games, help='Game to use as domain', default="connect4")
-        parser.add_argument('--added_depth', type=int, help='Number of additional recurrence iterations to run for player 1 rnn', default=0) 
-        parser.add_argument('--rnn_first', type=bool, help='Will the rnn make the first move?', default=False)
-        parser.add_argument('--num_tests', type=int, help='Number of games to average', default=1)
-        parser.add_argument('--render', type=bool, help='Display each step to screen?', default=False)
-        args = parser.parse_args()
+    games = [
+        filename[:-3]
+        for filename in sorted(
+            os.listdir(os.path.dirname(os.path.realpath(__file__)) + "/games")
+        )
+        if filename.endswith(".py") and filename != "abstract_game.py"
+    ]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--game', choices=games, help='Game to use as domain', default="connect4")
+    parser.add_argument('--added_depth', type=int, help='Number of additional recurrence iterations to run for player 1 rnn', default=0)
+    parser.add_argument('--rnn_first', type=bool, help='Will the rnn make the first move?', default=False)
+    parser.add_argument('--num_tests', type=int, help='Number of games to average', default=1)
+    parser.add_argument('--render', type=bool, help='Display each step to screen?', default=False)
+    args = parser.parse_args()
 
-        if args.game not in games:
-            print("Invalid game, exiting")
-            exit(1)
+    if args.game not in games:
+        print("Invalid game, exiting")
+        exit(1)
 
-        ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
-        rnn_config_1 = {'recur': True, 'added_depth': args.added_depth}
-        resnet_config = {'recur': False, 'added_depth': 0}
-        
-        # Initialize MuZero object for both players 
-        rnn = MuZero(args.game, config=rnn_config_1)
-        resnet = MuZero(args.game, config=resnet_config)
+    ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
+    rnn_config_1 = {'recur': True, 'added_depth': args.added_depth}
+    resnet_config = {'recur': False, 'added_depth': 0}
 
-        # Loading model for each network
-        print("********************** PICK RNN ***********************")
-        load_model_menu(rnn, args.game)
-        print("********************* PICK RESNET *********************")
-        load_model_menu(resnet, args.game)
-        
-        # Play models against each_other
-        if args.rnn_first:
-            print("RNN moves first!")
-            result = rnn.test(resnet, render=args.render, opponent='rnn-test', muzero_player=1, num_tests=args.num_tests, num_gpus=1) 
-        else:
-            print("ResNet moves first!")
-            result = resnet.test(rnn, render=args.render, opponent='rnn-test', muzero_player=0, num_tests=args.num_tests, num_gpus=1)
-        
-        print("Averaged result: ")
-        print(result)
-        ray.shutdown()
+    # Initialize MuZero object for both players
+    rnn = MuZero(args.game, config=rnn_config_1)
+    resnet = MuZero(args.game, config=resnet_config)
+
+    # Loading model for each network
+    print("********************** PICK RNN ***********************")
+    load_model_menu(rnn, args.game)
+    print("********************* PICK RESNET *********************")
+    load_model_menu(resnet, args.game)
+
+    # Play models against each_other
+    if args.rnn_first:
+        print("RNN moves first!")
+        result = rnn.test(resnet, render=args.render, opponent='rnn-test', muzero_player=1, num_tests=args.num_tests, num_gpus=1)
+    else:
+        print("ResNet moves first!")
+        result = resnet.test(rnn, render=args.render, opponent='rnn-test', muzero_player=0, num_tests=args.num_tests, num_gpus=1)
+
+    print("Averaged result: ")
+    print(result)
+    ray.shutdown()

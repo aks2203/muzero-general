@@ -5,6 +5,7 @@ import os
 import pickle
 import sys
 import time
+import uuid
 from glob import glob
 
 import nevergrad
@@ -578,6 +579,12 @@ if __name__ == "__main__":
             print("Invalid game, exiting")
             exit(1)
 
+        results_path = f"rr{args.recur_representation}_" \
+                       f"adr{args.added_depth_representation}_" \
+                       f"rd{args.recur_dynamics}_" \
+                       f"add{args.added_depth_dynamics}_" \
+                       f"rp{args.recur_prediction}_" \
+                       f"adp{args.added_depth_prediction}/{uuid.uuid1().hex}" \
         ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
         config = {
             'recur_representation': args.recur_representation, 
@@ -585,7 +592,8 @@ if __name__ == "__main__":
             'recur_dynamics': args.recur_dynamics, 
             'added_depth_dynamics': args.added_depth_dynamics,
             'recur_prediction': args.recur_prediction, 
-            'added_depth_prediction': args.added_depth_prediction
+            'added_depth_prediction': args.added_depth_prediction,
+            'results_path': results_path
         }
         # Initialize MuZero
         muzero = MuZero(args.game, config=config)

@@ -214,13 +214,16 @@ class MuZero:
             self.shared_storage_worker, None, True
         )
 
+        with open(os.path.join(self.config.results_path, "config.txt"), "w") as fh:
+            fh.write(str(vars(self.config)))
+
         # Write everything in TensorBoard
         writer = SummaryWriter(self.config.results_path)
 
         print(
             "\nTraining...\nRun tensorboard --logdir ./results and go to http://localhost:6006/ to see in real time the training performance.\n"
         )
-
+        print(f'{time.asctime()}')
         # Save hyperparameters to TensorBoard
         hp_table = [
             f"| {key} | {value} |" for key, value in self.config.__dict__.items()
@@ -298,8 +301,9 @@ class MuZero:
                 writer.add_scalar("3.Loss/Value_loss", info["value_loss"], counter)
                 writer.add_scalar("3.Loss/Reward_loss", info["reward_loss"], counter)
                 writer.add_scalar("3.Loss/Policy_loss", info["policy_loss"], counter)
+                time_to_print = time.asctime()
                 print(
-                    f'Last test reward: {info["total_reward"]:.2f}. Training step: {info["training_step"]}/{self.config.training_steps}. Played games: {info["num_played_games"]}. Loss: {info["total_loss"]:.2f}',
+                    f'{time_to_print}: Last test reward: {info["total_reward"]:.2f}. Training step: {info["training_step"]}/{self.config.training_steps}. Played games: {info["num_played_games"]}. Loss: {info["total_loss"]:.2f}',
                     end="\r",
                 )
                 counter += 1
@@ -597,10 +601,12 @@ if __name__ == "__main__":
             print("Invalid option, exiting")
             exit(1)
 
+        # print(config.save
+
         if args.option == "Train":
             muzero.train()
         elif args.option == "Load":
-            load_model_menu(muzero, game_name)
+            load_model_menu(muzero, args.game)
         elif args.option == "Diagnose":
             muzero.diagnose_model(30)
         elif args.option == "Render":
@@ -629,9 +635,9 @@ if __name__ == "__main__":
             discount = nevergrad.p.Log(lower=0.95, upper=0.9999)
             parametrization = nevergrad.p.Dict(lr_init=lr_init, discount=discount)
             best_hyperparameters = hyperparameter_search(
-                game_name, parametrization, budget, parallel_experiments, 20
+                args.game, parametrization, budget, parallel_experiments, 20
             )
-            muzero = MuZero(game_name, best_hyperparameters)
+            muzero = MuZero(args.game, best_hyperparameters)
         else:
             print("Error, should not have gotten here. Exiting")
             exit(1)

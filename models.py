@@ -575,8 +575,8 @@ class MuZeroResidualNetwork(AbstractNetwork):
         
         #ORIGINAL CODE BELOW
         #self.representation_network = torch.nn.DataParallel(
-        
-        self.representation_network = RepresentationNetwork(
+        # self.representation_network = RepresentationNetwork(
+        self.representation_network = torch.nn.DataParallel(RepresentationNetwork(
             observation_shape,
             stacked_observations,
             num_blocks,
@@ -584,12 +584,12 @@ class MuZeroResidualNetwork(AbstractNetwork):
             downsample,
             recur=recur_r,
             added_depth=added_depth_r,
-        )
+        ))
 
         #ORIGINAL CODE BELOW
         #self.dynamics_network = torch.nn.DataParallel(
-       
-        self.dynamics_network = DynamicsNetwork(
+        # self.dynamics_network = DynamicsNetwork(
+        self.dynamics_network = torch.nn.DataParallel(DynamicsNetwork(
             num_blocks,
             num_channels + 1,
             reduced_channels_reward,
@@ -598,11 +598,12 @@ class MuZeroResidualNetwork(AbstractNetwork):
             block_output_size_reward,
             recur=recur_d,
             added_depth=added_depth_d
-        )
+        ))
         
         #ORIGINAL CODE BELOW
         #self.prediction_network = torch.nn.DataParallel(
-        self.prediction_network = PredictionNetwork(
+        # self.prediction_network = PredictionNetwork(
+        self.prediction_network = torch.nn.DataParallel(PredictionNetwork(
             action_space_size,
             num_blocks,
             num_channels,
@@ -615,8 +616,8 @@ class MuZeroResidualNetwork(AbstractNetwork):
             block_output_size_policy,
             recur=recur_p,
             added_depth=added_depth_p
-        )
-        self.recur=recur_r #or recur_p or recur_d
+        ))
+        # self.recur=recur_r #or recur_p or recur_d
 
     def prediction(self, encoded_state):
         policy, value = self.prediction_network(encoded_state)

@@ -70,11 +70,11 @@ class Trainer:
         ):
             
             
-            ###ADDING CODE LOOSELY FOR NEW AMOUNT OF RECURRENCE
-            if self.training_step >= 70000 and self.notyetchanged:
-                self.model.representation_network.num_blocks += 5
-                self.notyetchanged = False
-                print("changing recurrence")
+            # ###ADDING CODE LOOSELY FOR NEW AMOUNT OF RECURRENCE
+            # if self.training_step >= 70000 and self.notyetchanged:
+            #     self.model.representation_network.num_blocks += 5
+            #     self.notyetchanged = False
+            #     print("changing recurrence")
             
 
             index_batch, batch = ray.get(next_batch)

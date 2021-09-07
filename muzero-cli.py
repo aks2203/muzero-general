@@ -572,6 +572,9 @@ if __name__ == "__main__":
         parser.add_argument('--added_depth_dynamics', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=0)
         parser.add_argument('--recur_prediction', help='Whether or not to have recurrence in the prediction network', action='store_true')
         parser.add_argument('--added_depth_prediction', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
+        parser.add_argument('--train_iterations', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=200000)
+        parser.add_argument('--learning_rate', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0.005)
+
 
         args = parser.parse_args()
 
@@ -593,7 +596,9 @@ if __name__ == "__main__":
             'added_depth_dynamics': args.added_depth_dynamics,
             'recur_prediction': args.recur_prediction, 
             'added_depth_prediction': args.added_depth_prediction,
-            'results_path': results_path
+            'results_path': results_path,
+            'training_steps': args.train_iterations,
+            'lr_init': args.learning_rate
         }
         # Initialize MuZero
         muzero = MuZero(args.game, config=config)

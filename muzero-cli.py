@@ -400,6 +400,49 @@ class MuZero:
             )
         return result
 
+    def load_model(self, checkpoint_path=None, replay_buffer_path=None):
+        """
+        Load a model and/or a saved replay buffer.
+
+        Args:
+            checkpoint_path (str): Path to model.checkpoint or model.weights.
+
+            replay_buffer_path (str): Path to replay_buffer.pkl
+        """
+        # Load checkpoint
+        if checkpoint_path:
+            if os.path.exists(checkpoint_path):
+                self.checkpoint = torch.load(checkpoint_path)
+                print(f"\nUsing checkpoint from {checkpoint_path}")
+            else:
+                print(f"\nThere is no model saved in {checkpoint_path}.")
+
+        # Load replay buffer
+        if replay_buffer_path:
+            if os.path.exists(replay_buffer_path):
+                with open(replay_buffer_path, "rb") as f:
+                    replay_buffer_infos = pickle.load(f)
+                self.replay_buffer = replay_buffer_infos["buffer"]
+                self.checkpoint["num_played_steps"] = replay_buffer_infos[
+                    "num_played_steps"
+                ]
+                self.checkpoint["num_played_games"] = replay_buffer_infos[
+                    "num_played_games"
+                ]
+                self.checkpoint["num_reanalysed_games"] = replay_buffer_infos[
+                    "num_reanalysed_games"
+                ]
+
+                print(f"\nInitializing replay buffer with {replay_buffer_path}")
+            else:
+                print(
+                    f"Warning: Replay buffer path '{replay_buffer_path}' doesn't exist.  Using empty buffer."
+                )
+                self.checkpoint["training_step"] = 0
+                self.checkpoint["num_played_steps"] = 0
+                self.checkpoint["num_played_games"] = 0
+                self.checkpoint["num_reanalysed_games"] = 0
+
     def diagnose_model(self, horizon):
         """
         Play a game only with the learned model then play the same trajectory in the real
@@ -555,17 +598,7 @@ def load_model_menu(muzero, game_name):
 
 if __name__ == "__main__":
 
-        options = ["Train", "Load", "Diagnose", "Render", "Play", "Test", "HyperparameterSearch", "TestRecurrence"]
-        games = [
-            filename[:-3]
-            for filename in sorted(
-                os.listdir(os.path.dirname(os.path.realpath(__file__)) + "/games")
-            )
-            if filename.endswith(".py") and filename != "abstract_game.py"
-        ]
         parser = argparse.ArgumentParser()
-        parser.add_argument('--game', choices=games, help='Game to use as domain', default="connect4")
-        parser.add_argument('--option', choices=options, help='What to do with the selected game', default="Train")
         parser.add_argument('--recur_representation', help='Whether or not to have recurrence in the representation network', action='store_true')
         parser.add_argument('--added_depth_representation', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
         parser.add_argument('--recur_dynamics', help='Whether or not to have recurrence in the dynamics network', action='store_true')
@@ -573,21 +606,22 @@ if __name__ == "__main__":
         parser.add_argument('--recur_prediction', help='Whether or not to have recurrence in the prediction network', action='store_true')
         parser.add_argument('--added_depth_prediction', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
         parser.add_argument('--train_iterations', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=200000)
-        parser.add_argument('--learning_rate', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0.005)
-
+        parser.add_argument('--learning_rate', type=float, help='Number of additional recurrence iterations to run in the prediction network', default=0.005)
+        parser.add_argument('--save_path', type=str, default=None, help='Where to save results')
+        parser.add_argument('--load_path', type=str, default=None, help='From where to load models')
 
         args = parser.parse_args()
 
-        if args.game not in games:
-            print("Invalid game, exiting")
-            exit(1)
+        if args.save_path is None:
+            results_path = f"rr{args.recur_representation}_" \
+                           f"adr{args.added_depth_representation}_" \
+                           f"rd{args.recur_dynamics}_" \
+                           f"add{args.added_depth_dynamics}_" \
+                           f"rp{args.recur_prediction}_" \
+                           f"adp{args.added_depth_prediction}/{uuid.uuid1().hex}"
+        else:
+            results_path = args.save_path
 
-        results_path = f"rr{args.recur_representation}_" \
-                       f"adr{args.added_depth_representation}_" \
-                       f"rd{args.recur_dynamics}_" \
-                       f"add{args.added_depth_dynamics}_" \
-                       f"rp{args.recur_prediction}_" \
-                       f"adp{args.added_depth_prediction}/{uuid.uuid1().hex}" \
         ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
         config = {
             'recur_representation': args.recur_representation, 
@@ -601,51 +635,16 @@ if __name__ == "__main__":
             'lr_init': args.learning_rate
         }
         # Initialize MuZero
-        muzero = MuZero(args.game, config=config)
+        muzero = MuZero('connect4', config=config)
 
-        if args.option not in options:
-            print("Invalid option, exiting")
-            exit(1)
+        if args.load_path is not None:
+            checkpoint_path = os.path.join(args.load_path, 'model.checkpoint')
+            if os.path.isfile(checkpoint_path):
+                replay_buffer_path = os.path.join(args.load_path, 'replay_buffer.pkl')
+                muzero.load_model(
+                    checkpoint_path=checkpoint_path, replay_buffer_path=replay_buffer_path,
+                )
 
-        # print(config.save
-
-        if args.option == "Train":
-            muzero.train()
-        elif args.option == "Load":
-            load_model_menu(muzero, args.game)
-        elif args.option == "Diagnose":
-            muzero.diagnose_model(30)
-        elif args.option == "Render":
-            muzero.test(render=True, opponent="self", muzero_player=None)
-        elif args.option == "Play":
-            muzero.test(render=True, opponent="human", muzero_player=0)
-        elif args.option == "Test":
-            env = muzero.Game()
-            env.reset()
-            env.render()
-
-            done = False
-            while not done:
-                action = env.human_to_action()
-                observation, reward, done = env.step(action)
-                print(f"\nAction: {env.action_to_string(action)}\nReward: {reward}")
-                env.render()
-        elif args.option == "HyperparameterSearch":
-            # Define here the parameters to tune
-            # Parametrization documentation: https://facebookresearch.github.io/nevergrad/parametrization.html
-            muzero.terminate_workers()
-            del muzero
-            budget = 20
-            parallel_experiments = 2
-            lr_init = nevergrad.p.Log(lower=0.0001, upper=0.1)
-            discount = nevergrad.p.Log(lower=0.95, upper=0.9999)
-            parametrization = nevergrad.p.Dict(lr_init=lr_init, discount=discount)
-            best_hyperparameters = hyperparameter_search(
-                args.game, parametrization, budget, parallel_experiments, 20
-            )
-            muzero = MuZero(args.game, best_hyperparameters)
-        else:
-            print("Error, should not have gotten here. Exiting")
-            exit(1)
+        muzero.train()
 
         ray.shutdown()

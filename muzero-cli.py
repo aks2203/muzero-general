@@ -308,6 +308,19 @@ class MuZero:
                     end="\r",
                 )
                 counter += 1
+                
+                ######## SAVING REPLAY BUFFER ########
+                pickle.dump(
+                    {
+                        "buffer": self.replay_buffer,
+                        "num_played_games": self.checkpoint["num_played_games"],
+                        "num_played_steps": self.checkpoint["num_played_steps"],
+                        "num_reanalysed_games": self.checkpoint["num_reanalysed_games"],
+                    },
+                    open(os.path.join(self.config.results_path, "replay_buffer.pkl"), "wb"),
+                )
+                ############# END EDIT ##############
+                
                 time.sleep(0.5)
         except KeyboardInterrupt:
             pass

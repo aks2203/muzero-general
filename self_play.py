@@ -215,7 +215,7 @@ class SelfPlay:
                     action, root = self.select_opponent_action(
                         opponent, stacked_observations
                     )
-
+                
                 observation, reward, done = self.game.step(action)
 
                 if render:
@@ -223,6 +223,11 @@ class SelfPlay:
                     self.game.render()
 
                 game_history.store_search_statistics(root, self.config.action_space)
+
+                ########## TESTING-ONLY CODE FOR TIES ###########
+                if opponent == 'rnn-test' and not self.game.env.have_winner() and len(self.game.legal_actions()) == 0:
+                    reward = 0.5
+                #################################################
 
                 # Next batch
                 game_history.action_history.append(action)

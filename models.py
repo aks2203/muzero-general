@@ -617,7 +617,6 @@ class MuZeroResidualNetwork(AbstractNetwork):
             recur=recur_p,
             added_depth=added_depth_p
         ))
-        # self.recur=recur_r #or recur_p or recur_d
 
     def prediction(self, encoded_state):
         policy, value = self.prediction_network(encoded_state)

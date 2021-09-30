@@ -86,9 +86,9 @@ class MuZeroConfig:
 
         # Exponential learning rate schedule
         #ORIGINAL CODE
-        self.lr_init = 0.005  # Initial learning rate
-        # self.lr_init = 0.0005
-        self.lr_decay_rate = 0.1  # Set it to 1 to use a constant learning rate
+        # self.lr_init = 0.005  # Initial learning rate
+        self.lr_init = 0.0005
+        self.lr_decay_rate = 1  # Set it to 1 to use a constant learning rate
         self.lr_decay_steps = 100000
 
 
@@ -238,8 +238,12 @@ class Connect4:
                 break
 
         done = self.have_winner() or len(self.legal_actions()) == 0
-
+        
+        # OLD CODE
         reward = 1 if self.have_winner() else 0
+
+        # NEW CODE
+        # reward = 1 * self.player if self.have_winner() else 0
 
         self.player *= -1
 

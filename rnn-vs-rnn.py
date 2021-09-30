@@ -550,8 +550,6 @@ if __name__ == "__main__":
 
         # Initialize MuZero object for both players 
         player_1 = MuZero('connect4', config=rnn_config_1)
-        player_1 = MuZero('connect4', config=rnn_config_1)
-        player_2 = MuZero('connect4', config=rnn_config_2)
         player_2 = MuZero('connect4', config=rnn_config_2)
 
         for chkpt, player in zip([args.chkpt_1, args.chkpt_2], [player_1, player_2]):

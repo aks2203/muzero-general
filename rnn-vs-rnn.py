@@ -517,35 +517,35 @@ if __name__ == "__main__":
         parser.add_argument('--render', help='Display each step to screen?', action='store_true')
         parser.add_argument('--chkpt_1', type=str, default=None, help='Path to player 1 checkpoint')
         parser.add_argument('--recur_representation_1', help='Whether or not to have recurrence in the representation network', action='store_true')
-        parser.add_argument('--added_depth_representation_1', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
+        parser.add_argument('--depth_representation_1', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
         parser.add_argument('--recur_dynamics_1', help='Whether or not to have recurrence in the dynamics network', action='store_true')
-        parser.add_argument('--added_depth_dynamics_1', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=0)
+        parser.add_argument('--depth_dynamics_1', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=0)
         parser.add_argument('--recur_prediction_1', help='Whether or not to have recurrence in the prediction network', action='store_true')
-        parser.add_argument('--added_depth_prediction_1', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
+        parser.add_argument('--depth_prediction_1', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
         parser.add_argument('--chkpt_2', type=str, default=None, help='Path to player 2 checkpoint')
         parser.add_argument('--recur_representation_2', help='Whether or not to have recurrence in the representation network', action='store_true')
-        parser.add_argument('--added_depth_representation_2', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
+        parser.add_argument('--depth_representation_2', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
         parser.add_argument('--recur_dynamics_2', help='Whether or not to have recurrence in the dynamics network', action='store_true')
-        parser.add_argument('--added_depth_dynamics_2', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=0)
+        parser.add_argument('--depth_dynamics_2', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=0)
         parser.add_argument('--recur_prediction_2', help='Whether or not to have recurrence in the prediction network', action='store_true')
-        parser.add_argument('--added_depth_prediction_2', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
+        parser.add_argument('--depth_prediction_2', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
         args = parser.parse_args()
 
         rnn_config_1 = {
             'recur_representation': args.recur_representation_1,
-            'added_depth_representation': args.added_depth_representation_1,
+            'depth_representation': args.depth_representation_1,
             'recur_dynamics': args.recur_dynamics_1,
-            'added_depth_dynamics': args.added_depth_dynamics_1,
+            'depth_dynamics': args.depth_dynamics_1,
             'recur_prediction': args.recur_prediction_1,
-            'added_depth_prediction': args.added_depth_prediction_1
+            'depth_prediction': args.depth_prediction_1
         } 
         rnn_config_2 = {
             'recur_representation': args.recur_representation_2,
-            'added_depth_representation': args.added_depth_representation_2,
+            'depth_representation': args.depth_representation_2,
             'recur_dynamics': args.recur_dynamics_2,
-            'added_depth_dynamics': args.added_depth_dynamics_2,
+            'depth_dynamics': args.depth_dynamics_2,
             'recur_prediction': args.recur_prediction_2,
-            'added_depth_prediction': args.added_depth_prediction_2
+            'depth_prediction': args.depth_prediction_2
         }
 
         # Initialize MuZero object for both players 

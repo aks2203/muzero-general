@@ -511,7 +511,7 @@ if __name__ == "__main__":
     ]
     parser = argparse.ArgumentParser()
     parser.add_argument('--game', choices=games, help='Game to use as domain', default="connect4")
-    parser.add_argument('--added_depth', type=int, help='Number of additional recurrence iterations to run for player 1 rnn', default=0)
+    parser.add_argument('--depth', type=int, help='Number of additional recurrence iterations to run for player 1 rnn', default=0)
     parser.add_argument('--rnn_first', type=bool, help='Will the rnn make the first move?', default=False)
     parser.add_argument('--num_tests', type=int, help='Number of games to average', default=1)
     parser.add_argument('--render', type=bool, help='Display each step to screen?', default=False)
@@ -522,8 +522,8 @@ if __name__ == "__main__":
         exit(1)
 
     ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
-    rnn_config_1 = {'recur': True, 'added_depth': args.added_depth}
-    resnet_config = {'recur': False, 'added_depth': 0}
+    rnn_config_1 = {'recur': True, 'depth': args.depth}
+    resnet_config = {'recur': False, 'depth': 0}
 
     # Initialize MuZero object for both players
     rnn = MuZero(args.game, config=rnn_config_1)

@@ -22,6 +22,7 @@ import shared_storage
 import trainer
 import argparse
 
+
 class MuZero:
     """
     Main class to manage MuZero.
@@ -613,11 +614,11 @@ if __name__ == "__main__":
 
         parser = argparse.ArgumentParser()
         parser.add_argument('--recur_representation', help='Whether or not to have recurrence in the representation network', action='store_true')
-        parser.add_argument('--added_depth_representation', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
+        parser.add_argument('--depth_representation', type=int, help='Number of additional recurrence iterations to run in the representation network', default=0)
         parser.add_argument('--recur_dynamics', help='Whether or not to have recurrence in the dynamics network', action='store_true')
-        parser.add_argument('--added_depth_dynamics', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=0)
+        parser.add_argument('--depth_dynamics', type=int, help='Number of additional recurrence iterations to run in the dynamics network', default=0)
         parser.add_argument('--recur_prediction', help='Whether or not to have recurrence in the prediction network', action='store_true')
-        parser.add_argument('--added_depth_prediction', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
+        parser.add_argument('--depth_prediction', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=0)
         parser.add_argument('--train_iterations', type=int, help='Number of additional recurrence iterations to run in the prediction network', default=200000)
         parser.add_argument('--learning_rate', type=float, help='Number of additional recurrence iterations to run in the prediction network', default=0.005)
         parser.add_argument('--save_path', type=str, default=None, help='Where to save results')
@@ -627,22 +628,22 @@ if __name__ == "__main__":
 
         if args.save_path is None:
             results_path = f"rr{args.recur_representation}_" \
-                           f"adr{args.added_depth_representation}_" \
+                           f"adr{args.depth_representation}_" \
                            f"rd{args.recur_dynamics}_" \
-                           f"add{args.added_depth_dynamics}_" \
+                           f"add{args.depth_dynamics}_" \
                            f"rp{args.recur_prediction}_" \
-                           f"adp{args.added_depth_prediction}/{uuid.uuid1().hex}"
+                           f"adp{args.depth_prediction}/{uuid.uuid1().hex}"
         else:
             results_path = args.save_path
 
         ### ADDING RECURRENCE FIELD TO CONFIG OBJECT ###
         config = {
             'recur_representation': args.recur_representation, 
-            'added_depth_representation': args.added_depth_representation,
+            'depth_representation': args.depth_representation,
             'recur_dynamics': args.recur_dynamics, 
-            'added_depth_dynamics': args.added_depth_dynamics,
+            'depth_dynamics': args.depth_dynamics,
             'recur_prediction': args.recur_prediction, 
-            'added_depth_prediction': args.added_depth_prediction,
+            'depth_prediction': args.depth_prediction,
             'results_path': results_path,
             'training_steps': args.train_iterations,
             'lr_init': args.learning_rate

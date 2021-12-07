@@ -215,8 +215,8 @@ class ResidualBlock(torch.nn.Module):
         super().__init__()
         self.conv1 = conv3x3(num_channels, num_channels, stride)
         self.conv2 = conv3x3(num_channels, num_channels)
-        self.group_norm1 = torch.nn.GroupNorm(1, num_channels)
-        self.group_norm2 = torch.nn.GroupNorm(1, num_channels)
+        self.group_norm1 = torch.nn.GroupNorm(4, num_channels)
+        self.group_norm2 = torch.nn.GroupNorm(4, num_channels)
 
     def forward(self, x):
         out = self.conv1(x)
@@ -329,7 +329,7 @@ class DynamicsNetwork(torch.nn.Module):
         super().__init__()
         self.recur = recur
         self.conv = conv3x3(num_channels, num_channels - 1)
-        self.group_norm = torch.nn.GroupNorm(1, num_channels - 1)
+        self.group_norm = torch.nn.GroupNorm(4, num_channels - 1)
 
         if self.recur:
             self.resblocks = ResidualBlock(num_channels - 1)
@@ -493,49 +493,27 @@ class MuZeroResidualNetwork(AbstractNetwork):
         next_encoded_state, reward = self.dynamics_network(x)
 
         # Scale encoded state between [0, 1] (See paper appendix Training)
-        min_next_encoded_state = (
-            next_encoded_state.view(
-                -1,
-                next_encoded_state.shape[1],
-                next_encoded_state.shape[2] * next_encoded_state.shape[3],
-            )
-            .min(2, keepdim=True)[0]
-            .unsqueeze(-1)
-        )
-        max_next_encoded_state = (
-            next_encoded_state.view(
-                -1,
-                next_encoded_state.shape[1],
-                next_encoded_state.shape[2] * next_encoded_state.shape[3],
-            )
-            .max(2, keepdim=True)[0]
-            .unsqueeze(-1)
-        )
+        min_next_encoded_state = (next_encoded_state.view(-1, next_encoded_state.shape[1],
+                                                          next_encoded_state.shape[2]
+                                                          * next_encoded_state.shape[3])
+                                  .min(2, keepdim=True)[0].unsqueeze(-1))
+        max_next_encoded_state = (next_encoded_state.view(-1, next_encoded_state.shape[1],
+                                                          next_encoded_state.shape[2]
+                                                          * next_encoded_state.shape[3])
+                                  .max(2, keepdim=True)[0].unsqueeze(-1))
         scale_next_encoded_state = max_next_encoded_state - min_next_encoded_state
         scale_next_encoded_state[scale_next_encoded_state < 1e-5] += 1e-5
-        next_encoded_state_normalized = (
-            next_encoded_state - min_next_encoded_state
-        ) / scale_next_encoded_state
+        next_encoded_state_normalized = (next_encoded_state - min_next_encoded_state) / scale_next_encoded_state
         return next_encoded_state_normalized, reward
 
     def initial_inference(self, observation):
         encoded_state = self.representation(observation)
         policy_logits, value = self.prediction(encoded_state)
         # reward equal to 0 for consistency
-        reward = torch.log(
-            (
-                torch.zeros(1, self.full_support_size)
-                .scatter(1, torch.tensor([[self.full_support_size // 2]]).long(), 1.0)
-                .repeat(len(observation), 1)
-                .to(observation.device)
-            )
-        )
-        return (
-            value,
-            reward,
-            policy_logits,
-            encoded_state,
-        )
+        reward = torch.log((torch.zeros(1, self.full_support_size)
+                            .scatter(1, torch.tensor([[self.full_support_size // 2]])
+                                     .long(), 1.0).repeat(len(observation), 1).to(observation.device)))
+        return (value, reward, policy_logits, encoded_state)
 
     def recurrent_inference(self, encoded_state, action):
         next_encoded_state, reward = self.dynamics(encoded_state, action)
